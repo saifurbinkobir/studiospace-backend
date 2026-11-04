@@ -1,0 +1,43 @@
+import express from 'express'
+import cors from 'cors'
+import 'dotenv/config'
+import { MongoClient } from 'mongodb';
+const app = express()
+const port = 5000
+
+// Mongo DB
+const client = new MongoClient(process.env.MONGODB_URI);
+export async function connectToMongoDB() {
+  try {
+    await client.connect();
+    console.log("You successfully connected to MongoDB!");
+    return client;
+  } catch (err) {
+    console.dir(err);
+  }
+}
+const connectClient = await connectToMongoDB();
+const db = connectClient.db("studiospace");
+const studioCollection = db.collection("studios");
+
+app.use(cors())
+app.use(express.json())
+
+app.get('/', (req, res) => {
+  res.send({ message: 'Server is running Successfully!' })
+})
+
+app.get('/studios/featured', async (req, res) => {
+  try {
+    // Fetch 6 newest studios from MongoDB
+    const featuredStudios = await studioCollection.find({}).sort({ _id: -1 }).limit(6).toArray();
+    res.send(featuredStudios);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({ error: 'Failed to fetch featured studios' });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Example app listening on port ${port}`)
+})
