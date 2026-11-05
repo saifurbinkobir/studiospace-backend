@@ -19,6 +19,8 @@ export async function connectToMongoDB() {
 const connectClient = await connectToMongoDB();
 const db = connectClient.db("studiospace");
 const studioCollection = db.collection("studios");
+const reviewCollection = db.collection("reviews");
+
 
 app.use(cors());
 app.use(express.json());
@@ -30,11 +32,7 @@ app.get("/", (req, res) => {
 // Featured Studios API
 app.get("/studios/featured", async (req, res) => {
   try {
-    const featuredStudios = await studioCollection
-      .find({})
-      .sort({ _id: -1 })
-      .limit(6)
-      .toArray();
+    const featuredStudios = await studioCollection.find({}).sort({ _id: -1 }).limit(6).toArray();
     res.send(featuredStudios);
   } catch (error) {
     console.error(error);
@@ -52,6 +50,15 @@ app.get("/studios", async (req, res) => {
   const studios = await studioCollection.find(query).toArray();
   res.send(studios);
 });
+
+// Add Studio API
+app.post("/studios", async (req, res) => {
+  const studio = req.body;
+  studio.rating = 0; 
+  const result = await studioCollection.insertOne(studio);
+  res.send(result);
+});
+
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
