@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import "dotenv/config";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 const app = express();
 const port = 5000;
 
@@ -67,6 +67,13 @@ app.get("/studios/my-studios", async (req, res) => {
   const { email } = req.query;
   const studios = await studioCollection.find({ ownerEmail: email }).toArray();
   res.send(studios);
+});
+
+// Delete Studio API
+app.delete("/studios/:id", async (req, res) => {
+  const { id } = req.params;
+  const result = await studioCollection.deleteOne({ _id: new ObjectId(id) });
+  res.send(result);
 });
 
 app.listen(port, () => {
