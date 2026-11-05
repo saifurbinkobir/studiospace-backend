@@ -69,6 +69,13 @@ app.get("/studios/my-studios", async (req, res) => {
   res.send(studios);
 });
 
+// Review API
+app.post("/studios/reviews", async (req, res) => {
+  const review = req.body;
+  const result = await reviewCollection.insertOne(review);
+  res.send(result);
+});
+
 // Delete Studio API
 app.delete("/studios/:id", async (req, res) => {
   const { id } = req.params;
