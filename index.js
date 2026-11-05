@@ -1,9 +1,9 @@
-import express from 'express'
-import cors from 'cors'
-import 'dotenv/config'
-import { MongoClient } from 'mongodb';
-const app = express()
-const port = 5000
+import express from "express";
+import cors from "cors";
+import "dotenv/config";
+import { MongoClient } from "mongodb";
+const app = express();
+const port = 5000;
 
 // Mongo DB
 const client = new MongoClient(process.env.MONGODB_URI);
@@ -20,24 +20,39 @@ const connectClient = await connectToMongoDB();
 const db = connectClient.db("studiospace");
 const studioCollection = db.collection("studios");
 
-app.use(cors())
-app.use(express.json())
+app.use(cors());
+app.use(express.json());
 
-app.get('/', (req, res) => {
-  res.send({ message: 'Server is running Successfully!' })
-})
+app.get("/", (req, res) => {
+  res.send({ message: "Server is running Successfully!" });
+});
 
-app.get('/studios/featured', async (req, res) => {
+// Featured Studios API
+app.get("/studios/featured", async (req, res) => {
   try {
-    // Fetch 6 newest studios from MongoDB
-    const featuredStudios = await studioCollection.find({}).sort({ _id: -1 }).limit(6).toArray();
+    const featuredStudios = await studioCollection
+      .find({})
+      .sort({ _id: -1 })
+      .limit(6)
+      .toArray();
     res.send(featuredStudios);
   } catch (error) {
     console.error(error);
-    res.status(500).send({ error: 'Failed to fetch featured studios' });
+    res.status(500).send({ error: "Failed to fetch featured studios" });
   }
 });
 
+// Studios Categories API
+app.get("/studios", async (req, res) => {
+  const { category } = req.query;
+  let query = {};
+  if (category) {
+    query.category = category;
+  }
+  const studios = await studioCollection.find(query).toArray();
+  res.send(studios);
+});
+
 app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-})
+  console.log(`Example app listening on port ${port}`);
+});
