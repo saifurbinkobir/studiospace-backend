@@ -63,7 +63,18 @@ app.post("/studios", async (req, res) => {
   res.send(result);
 });
 
-//My Studios API
+// Update Studio API
+app.put("/studios/:id", async (req, res) => {
+  const { id } = req.params;
+  const { _id, ...updatedData } = req.body;
+  const result = await studioCollection.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: updatedData }
+  );
+  res.send(result);
+});
+
+// My Studios API
 app.get("/studios/my-studios", async (req, res) => {
   const { email } = req.query;
   const studios = await studioCollection.find({ ownerEmail: email }).toArray();
@@ -84,6 +95,59 @@ app.post("/studios/reviews", async (req, res) => {
   res.send(result);
 });
 
+// Get My Bookings API
+app.get("/studios/bookings", async (req, res) => {
+  const { email } = req.query;
+  if (!email) {
+    return res.status(400).send({ error: "Email is required" });
+  }
+  const bookings = await bookingCollection.find({ userEmail: email }).toArray();
+  res.send(bookings);
+});
+
+// Create Booking API
+app.post("/studios/bookings", async (req, res) => {
+  const booking = req.body;
+
+  const start = new Date(booking.startDateTime);
+  const end = new Date(booking.endDateTime);
+
+  const conflict = await bookingCollection.findOne({
+    studioId: booking.studioId,
+    status: "Confirmed",
+    startDateTime: { $lt: end },
+    endDateTime: { $gt: start },
+  });
+
+  if (conflict) {
+    return res.status(409).send({
+      error: "Studio Already Booked",
+    });
+  }
+
+  const newBooking = {
+    ...booking,
+    startDateTime: start,
+    endDateTime: end,
+    status: "Pending",
+  };
+
+  const result = await bookingCollection.insertOne(newBooking);
+  res.send(result);
+});
+
+// Cancel Booking API
+app.patch("/studios/bookings/:id", async (req, res) => {
+  const { id } = req.params;
+  
+  const result = await bookingCollection.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: { status: "Cancelled" } }
+  );
+  
+  res.send(result);
+});
+
 // Studio Details API
 app.get("/studios/:id", async (req, res) => {
   const { id } = req.params;
@@ -96,24 +160,6 @@ app.delete("/studios/:id", async (req, res) => {
   const { id } = req.params;
   const result = await studioCollection.deleteOne({ _id: new ObjectId(id) });
   res.send(result);
-});
-
-// My Bookings API
-app.post("/studios/bookings", async (req, res) => {
-  const booking = req.body;
-  booking.status = "Pending"; 
-  const result = await bookingCollection.insertOne(booking);
-  res.send(result);
-});
-
-// Get My Bookings API
-app.get("/studios/bookings", async (req, res) => {
-  const { email } = req.query;
-  if (!email) {
-    return res.status(400).send({ error: "Email is required" });
-  }
-  const bookings = await bookingCollection.find({ userEmail: email }).toArray();
-  res.send(bookings);
 });
 
 app.listen(port, () => {
